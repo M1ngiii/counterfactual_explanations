@@ -19,7 +19,7 @@ Both environments share the same dataset and model files.
 Before creating environments, run:
 
 ```bash
-python fetch_data_and_models.py
+python src/utils/fetch_data_and_models.py
 ```
 
 This downloads the CounterEval dataset and their Llama 3.1 8B model weights.
