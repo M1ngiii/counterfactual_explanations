@@ -45,7 +45,7 @@ def main():
     parser.add_argument(
         "--algorithm",
         default="DiCE",
-        help="Which algorithm to evaluate (DiCE, GS, FACE)",
+        help="Which algorithm to evaluate (DiCE, GS, AR, FACE, CLUE)",
     )
 
     args = parser.parse_args()

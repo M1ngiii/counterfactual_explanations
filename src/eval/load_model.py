@@ -13,6 +13,10 @@ OFFLOAD_DIR = ROOT / ".cache" / "offload"
 def load_countereval_model():
     """Load base LLaMA 3.1 8B and attach the adapter."""
     tokenizer = AutoTokenizer.from_pretrained(ADAPTER_DIR)
+    tokenizer.padding_side = "left"
+
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
 
     OFFLOAD_DIR.mkdir(parents=True, exist_ok=True)
 

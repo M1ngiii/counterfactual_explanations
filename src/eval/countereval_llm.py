@@ -21,7 +21,7 @@ METRIC_KEYS = [
 
 
 class CounterEvalLLMEvaluator:
-    def __init__(self, max_new_tokens: int = 32, batch_size: int = 2):
+    def __init__(self, max_new_tokens: int = 64, batch_size: int = 2):
         self.model, self.tokenizer = load_countereval_model()
         self.max_new_tokens = max_new_tokens
         self.batch_size = batch_size
