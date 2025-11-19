@@ -212,3 +212,5 @@ __marimo__/
 # Downloaded datasets and models
 data/
 
+# Analysis folder. Might add it to git later
+analysis/
