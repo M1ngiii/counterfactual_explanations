@@ -5,6 +5,8 @@ import pandas as pd
 import os
 import warnings
 
+from src.carla_wrappers.datasets.adult import AdultData
+from src.carla_wrappers.models.ann_adult import AdultANNModel
 from src.generate.adult_model import load_adult_model 
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # 0 = all, 1 = INFO, 2 = WARNING, 3 = ERROR
@@ -33,19 +35,22 @@ def load_generator(name: str):
 def run_algorithm(algorithm: str, n_factuals: int):
     GeneratorClass = load_generator(algorithm)
 
+    dataset = AdultData()
     dataset_name = "adult"
+    model = AdultANNModel(dataset)
     model_name = "ann"
+
     OVERSAMPLE_FACTORS = {
         "GS": 10,
         "AR": 10,
         "CLUE": 25,
-        "DiCE": 1,
+        "DiCE": 2,
         "FACE": 1,
     }
 
     if algorithm in {"GS", "AR", "FACE", "CLUE", "DiCE"}: 
         oversample_factor = OVERSAMPLE_FACTORS.get(algorithm, 1)
-        generator = GeneratorClass(dataset_name=dataset_name, model_name=model_name, method=algorithm, oversample=oversample_factor)
+        generator = GeneratorClass(dataset=dataset, dataset_name=dataset_name, model=model, model_name=model_name, method=algorithm, oversample=oversample_factor)
 
     elif algorithm == "DiCE_legacy":
         bundle = load_adult_model()

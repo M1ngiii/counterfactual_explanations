@@ -3,6 +3,7 @@ from huggingface_hub import hf_hub_download
 import shutil
 import subprocess
 import urllib
+import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -13,21 +14,72 @@ MODEL_DEST_DIR = ROOT / "data" / "models" / "trained_3.1.8b"
 # CounterEval paths
 GITHUB_REPO = "https://github.com/anitera/CounterEval.git" 
 GITHUB_MODEL_SUBDIR = Path("models") / "trained_3.1.8b"
-
-# Adult dataset paths (Carla)
-ADULT_DEST_DIR = ROOT / "data" / "adult"
-ADULT_FILENAME = "adult.csv"
-ADULT_URL = (
-    "https://raw.githubusercontent.com/carla-recourse/cf-data/"
-    "master/data/adult/preprocessed/adult.csv"
-)
-
-FILES = [
+COUNTEREVAL_FILES = [
     "cleaned_cf_dataset.csv",
     "full_cf_dataset.csv",
     "participant_background.csv",
     "survey_question.csv",
 ]
+
+# Adult dataset paths
+ADULT_DEST_DIR = ROOT / "data" / "adult"
+ADULT_FILENAME = "adult_raw.csv"
+ADULT_TRAIN_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"
+ADULT_TEST_URL  = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.test"
+ADULT_COLUMNS = [
+    "age",
+    "workclass",
+    "fnlwgt",
+    "education",
+    "education-num",
+    "marital-status",
+    "occupation",
+    "relationship",
+    "race",
+    "sex",
+    "capital-gain",
+    "capital-loss",
+    "hours-per-week",
+    "native-country",
+    "income",
+]
+
+def download_adult_dataset():
+    ADULT_DEST_DIR.mkdir(parents=True, exist_ok=True)
+    dest_path = ADULT_DEST_DIR / ADULT_FILENAME
+
+    if dest_path.exists():
+        print(f"[skip] Adult dataset already exists at {dest_path}")
+        return
+
+    print("[info] Downloading Adult dataset")
+
+    df_train = pd.read_csv(
+        ADULT_TRAIN_URL,
+        header=None,
+        names=ADULT_COLUMNS,
+        sep=", ",
+        engine="python",
+    )
+
+    df_test = pd.read_csv(
+        ADULT_TEST_URL,
+        header=None,
+        names=ADULT_COLUMNS,
+        sep=", ",
+        engine="python",
+        skiprows=1,
+    )
+
+    # Clean test labels
+    df_test["income"] = df_test["income"].str.replace(".", "", regex=False)
+
+    # Merge
+    df = pd.concat([df_train, df_test], ignore_index=True)
+
+    # Save
+    df.to_csv(dest_path, index=False)
+    print(f"[ok] Saved Adult dataset to {dest_path}")
 
 def download_countereval_dataset(filename: str):
     """Download one CounterEval CSV from HuggingFace"""
@@ -76,10 +128,13 @@ def download_model():
 
 def main():
     # 1. Download CounterEval CSVs
-    for fname in FILES:
+    for fname in COUNTEREVAL_FILES:
         download_countereval_dataset(fname)
 
-    # 2. Download the model
+    # 2. Download Adult dataset
+    download_adult_dataset()
+
+    # 3. Download the model
     download_model()
 
 if __name__ == "__main__":

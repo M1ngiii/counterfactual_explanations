@@ -5,23 +5,25 @@ import pandas as pd
 
 from src.eval.countereval_llm import CounterEvalLLMEvaluator
 
-CF_RAW_DIR = Path("data") / "cf_raw"
+ALGORITHMS = ["DiCE", "GS", "AR", "FACE", "CLUE"]            # ["DiCE", "GS", "AR", "FACE", "CLUE"]
+
+CF_STORY_DIR = Path("data") / "cf_stories"
 CF_SCORED_DIR = Path("data") / "cf_scored"
 
 
 def run_evaluation(algorithm: str):
-    """Load raw CFs for an algorithm, score them with CounterEval, save to CSV."""
+    """Load storified CFs for an algorithm, score them with CounterEval, save to CSV."""
 
-    in_path = CF_RAW_DIR / f"{algorithm.lower()}.csv"
+    in_path = CF_STORY_DIR / f"{algorithm.lower()}_stories.csv"
     if not in_path.exists():
         raise FileNotFoundError(f"Could not find input file: {in_path}")
 
     print(f"Loading counterfactuals from {in_path}...")
     df = pd.read_csv(in_path)
 
-    # Sanity check: make sure columns exist
-    if "orig_text" not in df.columns or "cf_text" not in df.columns:
-        raise ValueError("Input CSV must contain 'orig_text' and 'cf_text' columns")
+    # Sanity check: make sure column exists
+    if "cf_story" not in df.columns:
+        raise ValueError("Input CSV must contain a 'cf_story' column")
 
     print("Loading CounterEval LLM evaluator...")
     evaluator = CounterEvalLLMEvaluator(
@@ -30,7 +32,7 @@ def run_evaluation(algorithm: str):
     )
 
     print(f"Scoring {len(df)} counterfactuals for {algorithm}...")
-    scored_df = evaluator.evaluate(df)
+    scored_df = evaluator.evaluate(df, cf_col="cf_story")
 
     CF_SCORED_DIR.mkdir(parents=True, exist_ok=True)
     out_path = CF_SCORED_DIR / f"{algorithm.lower()}_scored.csv"
@@ -45,12 +47,19 @@ def main():
     parser.add_argument(
         "--algorithm",
         default="DiCE",
-        help="Which algorithm to evaluate (DiCE, GS, AR, FACE, CLUE)",
+        help="Which algorithm to evaluate (DiCE, GS, AR, FACE, CLUE, or All)",
     )
 
     args = parser.parse_args()
 
-    run_evaluation(args.algorithm)
+    if args.algorithm.lower() == "all":
+        for algo in ALGORITHMS:
+            try:
+                run_evaluation(algo)
+            except FileNotFoundError as e:
+                print(f"Skipping {algo}: {e}")
+    else:
+        run_evaluation(args.algorithm)
 
 
 if __name__ == "__main__":
