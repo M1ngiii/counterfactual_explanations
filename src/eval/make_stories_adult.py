@@ -61,6 +61,15 @@ OCCUPATION_MAP = {
     "?": "an unspecified occupation",
 }
 
+RACE_MAP = {
+    "White": "White",
+    "Black": "Black",
+    "Asian-Pac-Islander": "Asian-Pac-Islander",
+    "Amer-Indian-Eskimo": "American Indian or Eskimo",
+    "Other": "unspecified race",
+    "?": "unspecified race",
+}
+
 # Helpers
 def parse_kv_text(text: str) -> Dict[str, str]:
     """ Parse csv into dictionary """
@@ -100,11 +109,16 @@ def normalize_country(raw: str) -> str:
         return "an unspecified country"
     return raw.replace("-", " ")
 
+def normalize_race(raw: str) -> str:
+    if not raw:
+        return ""
+    return RACE_MAP.get(raw, raw.replace("-", " "))
+
 def adult_factual_story(feat: Dict[str, str]) -> str:
     """Turn a parsed Adult row into a short natural-language scenario."""
 
     age = feat.get("age", "unknown")
-    sex = feat.get("sex", "").lower()  # "Male" / "Female"
+    sex = feat.get("sex", "")  # "Male" / "Female"
     marital_raw = feat.get("marital-status", "")
     education_raw = feat.get("education", "")
     hours = feat.get("hours-per-week", "unknown")
@@ -112,6 +126,7 @@ def adult_factual_story(feat: Dict[str, str]) -> str:
     workclass_raw = feat.get("workclass", "")
     relationship_raw = feat.get("relationship", "")
     country_raw = feat.get("native-country", "")
+    race_raw = feat.get("race", "")
 
     marital = marital_raw.replace("-", " ").lower()
     country_phrase = normalize_country(country_raw)
@@ -119,14 +134,21 @@ def adult_factual_story(feat: Dict[str, str]) -> str:
     workclass_phrase = normalize_workclass(workclass_raw)
     education_phrase = normalize_education(education_raw)
     relationship_phrase = normalize_relationship(relationship_raw)
+    race_phrase = normalize_race(race_raw)
 
     parts = []
 
     # basic identity
     if sex:
-        parts.append(f"You are a {age}-year-old {marital} {sex}.")
+        if race_phrase:
+            parts.append(f"You are a {age}-year-old {race_phrase} {marital} {sex}.")
+        else:
+            parts.append(f"You are a {age}-year-old {marital} {sex}.")
     else:
-        parts.append(f"You are {age} years old and {marital}.")
+        if race_phrase:
+            parts.append(f"You are a {age}-year-old {race_phrase} and {marital}.")
+        else:
+            parts.append(f"You are {age} years old and {marital}.")
 
     # education
     if education_phrase:
@@ -178,6 +200,9 @@ def adult_change_story(orig: Dict[str, str], cf: Dict[str, str]) -> str:
         elif key == "occupation":
             from_val = normalize_occupation(orig[key])
             to_val = normalize_occupation(cf[key])
+        elif key == "race":
+            from_val = normalize_race(orig[key])
+            to_val = normalize_race(cf[key])
         else:
             from_val = orig[key].replace("-", " ")
             to_val = cf[key].replace("-", " ")
